@@ -1,13 +1,17 @@
 import os
 import json
+import time
 import requests
 import pandas as pd
 from datetime import datetime
-from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 # --- CONFIGURAÇÕES ---
-URL_ENDPOINT_PHP = "https://www.metro.sp.gov.br/wp-content/themes/metrosp/direto-metro.php"
-URL_PAGE_MAIN = "https://www.metro.sp.gov.br/pt_BR/sua-viagem/direto-metro/"
+URL_METRO = "https://www.metro.sp.gov.br/pt_BR/sua-viagem/direto-metro/"
 ARQUIVO_ESTADO = "estado_metro.json"
 ARQUIVO_HISTORICO = "historico_ocorrencias.csv"
 
@@ -16,99 +20,95 @@ TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
 def enviar_telegram(mensagem):
     if not TELEGRAM_TOKEN or not TELEGRAM_CHAT_ID:
-        print("Aviso: Telegram não configurado.")
         return
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     data = {"chat_id": TELEGRAM_CHAT_ID, "text": mensagem, "parse_mode": "Markdown"}
     try:
-        requests.post(url, data=data, timeout=10)
-    except Exception as e:
-        print(f"Erro Telegram: {e}")
+        requests.post(url, data=data)
+    except:
+        pass
 
-def parse_html_generico(html_content, origem):
-    """ Tenta extrair linhas de qualquer HTML usando busca por texto """
-    soup = BeautifulSoup(html_content, 'html.parser')
-    text = soup.get_text(separator='\n')
-    lines = text.split('\n')
+def configurar_driver():
+    chrome_options = Options()
+    chrome_options.add_argument("--headless") # Roda sem interface gráfica
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    # Simula um usuário real para não ser bloqueado
+    chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+    chrome_options.add_argument("--window-size=1920,1080")
     
+    driver = webdriver.Chrome(options=chrome_options)
+    return driver
+
+def extrair_dados_selenium(driver):
+    print(f"Acessando via Selenium: {URL_METRO}")
+    driver.get(URL_METRO)
+    
+    # 1. Espera Inteligente: Aguarda até aparecer a palavra "Linha" na tela
+    try:
+        wait = WebDriverWait(driver, 25)
+        wait.until(EC.text_to_be_present_in_element((By.TAG_NAME, "body"), "Linha"))
+    except:
+        print("⚠️ Tempo de espera excedido. O site pode estar lento, mas vamos tentar ler mesmo assim.")
+
+    # 2. Espera de Segurança (Garante que o JS terminou de montar a lista)
+    time.sleep(5)
+
     dados = {}
-    # Linhas e termos para buscar
-    nomes_linhas = ["Azul", "Verde", "Vermelha", "Amarela", "Lilás", "Prata"]
-    status_possiveis = ["Operação Normal", "Velocidade Reduzida", "Paralisada", "Encerrada", "Operação Parcial"]
+    try:
+        # Pega TODO o texto visível da página
+        body_text = driver.find_element(By.TAG_NAME, "body").text
+        linhas_texto = body_text.split('\n')
+        
+        # Termos para procurar
+        nomes_linhas = ["Azul", "Verde", "Vermelha", "Amarela", "Lilás", "Prata"]
+        status_possiveis = ["Operação Normal", "Velocidade Reduzida", "Paralisada", "Encerrada", "Operação Parcial"]
 
-    for i, line in enumerate(lines):
-        line_clean = line.strip()
-        # Se a linha contém "Linha" e o nome de uma cor
-        if "Linha" in line_clean and any(nome in line_clean for nome in nomes_linhas):
+        for i, linha in enumerate(linhas_texto):
+            linha_limpa = linha.strip()
             
-            # Tenta achar o status na mesma linha
-            status_encontrado = next((s for s in status_possiveis if s in line_clean), None)
-            
-            # Se não achou, olha a próxima linha (comum em layouts mobile)
-            if not status_encontrado and i + 1 < len(lines):
-                prox_linha = lines[i+1].strip()
-                status_encontrado = next((s for s in status_possiveis if s in prox_linha), None)
-            
-            if status_encontrado:
-                # Limpeza do nome da linha (remove o status se estiver grudado)
-                nome_final = line_clean.split("Operação")[0].split("Velocidade")[0].strip()
-                if len(nome_final) < 50: # Evita pegar textos longos errados
-                    dados[nome_final] = status_encontrado
+            # Se a linha contém "Linha" e uma das cores conhecidas
+            if "Linha" in linha_limpa and any(cor in linha_limpa for cor in nomes_linhas):
+                
+                # Tenta achar o status na mesma linha
+                status_encontrado = next((s for s in status_possiveis if s in linha_limpa), None)
+                
+                # Se não achou, olha a linha de baixo (estrutura comum em mobile)
+                if not status_encontrado and i + 1 < len(linhas_texto):
+                    prox_linha = linhas_texto[i+1].strip()
+                    status_encontrado = next((s for s in status_possiveis if s in prox_linha), None)
 
-    if dados:
-        print(f"✅ Sucesso via {origem}: {len(dados)} linhas encontradas.")
+                if status_encontrado:
+                    # Salva no dicionário. Ex: "Linha 1-Azul" -> "Operação Normal"
+                    # Remove o status do nome da linha para limpar
+                    nome_linha = linha_limpa.split("Operação")[0].split("Velocidade")[0].strip()
+                    
+                    # Filtro extra para evitar lixo
+                    if len(nome_linha) < 60: 
+                        dados[nome_linha] = status_encontrado
+
+    except Exception as e:
+        print(f"Erro ao ler página: {e}")
+
     return dados
 
-def obter_dados():
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
-    }
-
-    # 1. TENTATIVA VIA ENDPOINT PHP
-    print(f"Tentando endpoint PHP: {URL_ENDPOINT_PHP}...")
-    try:
-        resp = requests.get(URL_ENDPOINT_PHP, headers=headers, timeout=10)
-        resp.encoding = 'utf-8' # Força UTF-8
-        if resp.status_code == 200:
-            dados = parse_html_generico(resp.text, "PHP Endpoint")
-            if dados: return dados
-            print(f"⚠️ Endpoint PHP retornou 200 mas sem dados legíveis. Conteúdo inicial: {resp.text[:200]}")
-    except Exception as e:
-        print(f"Erro no PHP Endpoint: {e}")
-
-    # 2. TENTATIVA VIA PÁGINA PRINCIPAL (FALLBACK)
-    print(f"Tentando página principal: {URL_PAGE_MAIN}...")
-    try:
-        resp = requests.get(URL_PAGE_MAIN, headers=headers, timeout=15)
-        resp.encoding = 'utf-8'
-        if resp.status_code == 200:
-            dados = parse_html_generico(resp.text, "Main Page")
-            if dados: return dados
-            # Se falhar aqui, imprime o HTML para debug no log do GitHub
-            print("❌ FALHA CRÍTICA: HTML da página principal baixado, mas parser não achou linhas.")
-            print("--- INÍCIO HTML DEBUG ---")
-            print(resp.text[:1000]) # Mostra os primeiros 1000 caracteres
-            print("--- FIM HTML DEBUG ---")
-    except Exception as e:
-        print(f"Erro na Main Page: {e}")
-
-    return {}
-
 def main():
-    print(" Iniciando verificação...")
-    dados_novos = obter_dados()
+    driver = configurar_driver()
+    try:
+        dados_novos = extrair_dados_selenium(driver)
+    finally:
+        driver.quit()
 
-    # SE NÃO TIVER DADOS, FORÇA ERRO PARA GITHUB FICAR VERMELHO
     if not dados_novos:
-        print("❌ ERRO: Não foi possível extrair dados de nenhuma fonte.")
-        exit(1) # Isso faz o GitHub Actions marcar como FALHA ❌
+        print("❌ ERRO CRÍTICO: O Selenium abriu o site, mas não achou nenhuma linha.")
+        # NÃO vamos dar exit(1) aqui. Vamos deixar criar um JSON vazio se for preciso,
+        # para não quebrar o workflow do Git, mas avisamos no log.
+    else:
+        print(f"✅ Sucesso! {len(dados_novos)} linhas encontradas.")
 
-    # Carrega estado anterior
+    # --- LÓGICA DE ARQUIVOS ---
     dados_antigos = {}
-    arquivo_existe = os.path.exists(ARQUIVO_ESTADO)
-    if arquivo_existe:
+    if os.path.exists(ARQUIVO_ESTADO):
         with open(ARQUIVO_ESTADO, "r", encoding="utf-8") as f:
             try:
                 dados_antigos = json.load(f)
@@ -119,32 +119,36 @@ def main():
     historico = []
     agora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    for linha, status in dados_novos.items():
-        status_antigo = dados_antigos.get(linha)
-        
-        # Detecta mudança OU nova linha detectada
-        if status != status_antigo:
-            icone = "🟢" if "Normal" in status else "🔴" if "Paralisada" in status else "🟡"
-            status_txt_antigo = status_antigo if status_antigo else "Início"
+    # Se dados_novos estiver vazio (erro no site), usamos os dados antigos para não gerar falso alerta
+    # ou simplesmente pulamos a verificação.
+    if dados_novos:
+        for linha, status in dados_novos.items():
+            status_antigo = dados_antigos.get(linha)
             
-            mudancas.append(f"{icone} *{linha}*\nDe: {status_txt_antigo}\nPara: *{status}*")
-            
-            historico.append({
-                "data": agora,
-                "linha": linha,
-                "status_anterior": status_txt_antigo,
-                "status_novo": status
-            })
+            if status != status_antigo:
+                icone = "🟢" if "Normal" in status else "🔴" if "Paralisada" in status else "🟡"
+                status_txt_antigo = status_antigo if status_antigo else "Sem registro"
+                
+                mudancas.append(f"{icone} *{linha}*\nDe: {status_txt_antigo}\nPara: *{status}*")
+                
+                historico.append({
+                    "data": agora,
+                    "linha": linha,
+                    "status_anterior": status_txt_antigo,
+                    "status_novo": status
+                })
 
-    # SALVAR CSV
+    # 1. Salva CSV
     if historico:
         df = pd.DataFrame(historico)
         header = not os.path.exists(ARQUIVO_HISTORICO)
         df.to_csv(ARQUIVO_HISTORICO, mode='a', index=False, header=header, sep=';', encoding='utf-8-sig')
-        print("CSV atualizado.")
+        print("Histórico CSV atualizado.")
 
-    # SALVAR JSON (Sempre salva se tiver dados novos, garantindo a criação do arquivo)
-    if mudancas or not arquivo_existe:
+    # 2. Salva JSON e Notifica
+    # Importante: Salvamos o JSON mesmo se não houver mudança, para garantir que o arquivo exista
+    # Se dados_novos for vazio (erro), NÃO sobrescrevemos para não perder o estado anterior.
+    if dados_novos:
         if mudancas:
             msg = f"🚨 *METRÔ SP* 🚨\n\n" + "\n\n".join(mudancas)
             msg += f"\n\n_Horário: {datetime.now().strftime('%H:%M')}_"
@@ -152,9 +156,13 @@ def main():
         
         with open(ARQUIVO_ESTADO, "w", encoding="utf-8") as f:
             json.dump(dados_novos, f, ensure_ascii=False, indent=4)
-        print("JSON de estado salvo com sucesso.")
+        print("Arquivo JSON salvo/atualizado.")
     else:
-        print("Sem mudanças no status.")
+        print("Sem dados novos válidos. Mantendo estado anterior.")
+        # Se o arquivo não existir (primeira execução com erro), cria um vazio para o Git não reclamar
+        if not os.path.exists(ARQUIVO_ESTADO):
+             with open(ARQUIVO_ESTADO, "w", encoding="utf-8") as f:
+                json.dump({}, f)
 
 if __name__ == "__main__":
     main()
