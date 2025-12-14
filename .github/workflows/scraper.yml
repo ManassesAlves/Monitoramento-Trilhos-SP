@@ -2,11 +2,11 @@ name: Monitor Metrô SP
 
 on:
   schedule:
-    - cron: '*/5 * * * *'
-  workflow_dispatch:
+    - cron: '*/5 * * * *' # Executa a cada 5 minutos
+  workflow_dispatch: # Permite disparar manualmente para testes
 
 permissions:
-  contents: write
+  contents: write # Permissão OBRIGATÓRIA para o robô salvar arquivos no repositório
 
 jobs:
   check_metro:
@@ -22,28 +22,37 @@ jobs:
           python-version: '3.9'
 
       - name: Instalar dependências
+        # Instala Selenium, Pandas e o Gerenciador de Driver necessário para o Chrome
         run: |
-          pip install selenium pandas webdriver-manager requests
+          pip install selenium pandas requests webdriver-manager
 
       - name: Executar Scraper
         env:
+          # Puxa os segredos configurados no repositório
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python main.py
 
-      - name: Commitar mudanças (se houver atualização)
+      - name: Commitar mudanças
         run: |
           git config --global user.name 'MetroBot'
           git config --global user.email 'bot@metro.sp'
           
-          # Tenta adicionar os arquivos (o script garante que o JSON existe, mesmo vazio)
-          git add estado_metro.json || echo "JSON não encontrado"
-          git add historico_ocorrencias.csv || echo "CSV não encontrado"
+          # Tenta adicionar o JSON (se ele existir)
+          if [ -f estado_metro.json ]; then
+            git add estado_metro.json
+          fi
+
+          # Tenta adicionar o CSV (se ele existir)
+          if [ -f historico_ocorrencias.csv ]; then
+            git add historico_ocorrencias.csv
+          fi
           
-          # Verifica se tem algo 'staged' (verde) para commitar
+          # Verifica se há algo 'staged' (verde) pronto para commitar
+          # Se não houver, ele imprime um aviso e NÃO falha o processo
           if ! git diff --cached --quiet; then
-            git commit -m "Atualizando status do metrô"
+            git commit -m "Atualizando status e histórico"
             git push
           else
-            echo "Nenhuma mudança para salvar no repositório."
+            echo "Nenhuma mudança detectada. Nada para salvar no Git."
           fi
