@@ -75,12 +75,6 @@ def emoji_status(status, operador):
     return "❓"
 
 
-def extrair_descricao(status_texto):
-    if "normal" in status_texto.lower():
-        return None
-    return status_texto.strip()
-
-
 def obter_status_antigo(valor):
     if isinstance(valor, dict):
         return valor.get("status")
@@ -133,7 +127,7 @@ def salvar_historico(linha, novo, antigo, descricao):
         ])
 
 # =====================================================
-# SCRAPING METRÔ (RESILIENTE)
+# SCRAPING METRÔ (SEM INVENTAR DESCRIÇÃO)
 # =====================================================
 
 def capturar_metro():
@@ -163,7 +157,7 @@ def capturar_metro():
 
             dados[linha] = {
                 "status": status_txt,
-                "descricao": extrair_descricao(status_txt),
+                "descricao": None,  # NÃO repetir status como motivo
             }
 
     return dados
@@ -176,11 +170,11 @@ def capturar_viamobilidade():
     dados = {
         "ViaMobilidade – Linha 8 Diamante": {
             "status": "Status indefinido",
-            "descricao": "Status não identificado no site",
+            "descricao": None,
         },
         "ViaMobilidade – Linha 9 Esmeralda": {
             "status": "Status indefinido",
-            "descricao": "Status não identificado no site",
+            "descricao": None,
         },
     }
 
@@ -200,17 +194,10 @@ def capturar_viamobilidade():
     return dados
 
 # =====================================================
-# SCRAPING CPTM (GLOBAL E SEGURO)
+# SCRAPING CPTM (GLOBAL)
 # =====================================================
 
 def capturar_cptm():
-    """
-    CPTM não expõe status estruturado por linha de forma confiável.
-    Estratégia:
-    - Assume Operação normal
-    - Só altera se houver palavras-chave claras de problema
-    """
-
     linhas_cptm = {
         "CPTM – Linha 7 – Rubi",
         "CPTM – Linha 8 – Diamante",
