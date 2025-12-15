@@ -90,7 +90,7 @@ def salvar_historico(linha, novo, antigo):
         ])
 
 # =====================================================
-# NORMALIZAÇÃO / EMOJI
+# EMOJI
 # =====================================================
 
 def emoji_status(status):
@@ -132,11 +132,15 @@ def capturar_metro():
     return dados
 
 # =====================================================
-# SCRAPING VIAMOBILIDADE (RESILIENTE)
+# SCRAPING VIAMOBILIDADE (GARANTIDO NO JSON)
 # =====================================================
 
 def capturar_viamobilidade():
-    dados = {}
+    # Sempre presentes no estado
+    dados = {
+        "ViaMobilidade – Linha 8 Diamante": "Status não identificado",
+        "ViaMobilidade – Linha 9 Esmeralda": "Status não identificado",
+    }
 
     try:
         with sync_playwright() as p:
@@ -149,26 +153,23 @@ def capturar_viamobilidade():
                 timeout=60000
             )
 
-            # buffer extra para scripts do Webflow
             page.wait_for_timeout(3000)
 
             soup = BeautifulSoup(page.content(), "lxml")
             browser.close()
 
-        texto = soup.get_text(" ", strip=True)
+        texto = soup.get_text(" ", strip=True).lower()
 
-        if "Linha 8" in texto:
-            dados["ViaMobilidade – Linha 8 Diamante"] = "Operação verificada"
+        if "normal" in texto:
+            dados["ViaMobilidade – Linha 8 Diamante"] = "Operação normal"
+            dados["ViaMobilidade – Linha 9 Esmeralda"] = "Operação normal"
 
-        if "Linha 9" in texto:
-            dados["ViaMobilidade – Linha 9 Esmeralda"] = "Operação verificada"
-
-        print(f"🚆 ViaMobilidade capturada: {len(dados)} linhas")
-        return dados
+        print("🚆 ViaMobilidade registrada no estado")
 
     except Exception as e:
         print("⚠️ Falha ao capturar ViaMobilidade:", e)
-        return {}
+
+    return dados
 
 # =====================================================
 # MAIN
@@ -185,10 +186,6 @@ def main():
     dados.update(capturar_metro())
     dados.update(capturar_viamobilidade())
 
-    if not dados:
-        print("❌ Nenhum dado capturado")
-        return
-
     for linha, status in dados.items():
         antigo = estado_anterior.get(linha)
 
@@ -203,7 +200,7 @@ def main():
         estado_atual[linha] = status
 
     salvar_estado(estado_atual)
-    print("✅ Estado atualizado com sucesso")
+    print("✅ JSON atualizado com sucesso")
 
 # =====================================================
 # ENTRYPOINT
