@@ -98,4 +98,124 @@ def normalizar_nome(numero, nome):
     return f"Linha {numero.strip()} – {nome.strip().title()}"
 
 
-def tipo_l_
+def tipo_linha(nome):
+    try:
+        return "CPTM" if int(nome.split()[1]) >= 7 else "METRO"
+    except Exception:
+        return "METRO"
+
+
+def emoji_linha(linha, status):
+    ok = "Normal" in status
+    if tipo_linha(linha) == "CPTM":
+        return "🚆✅" if ok else "🚆⚠️"
+    return "🚇✅" if ok else "🚇⚠️"
+
+# =====================================================
+# SCRAPER METRÔ (HTML)
+# =====================================================
+
+def capturar_metro():
+    dados = {}
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        page.goto(URL_METRO, timeout=60000)
+
+        try:
+            page.click("button:has-text('Aceitar')", timeout=5000)
+        except:
+            pass
+
+        page.wait_for_selector("li.linha", timeout=15000)
+        soup = BeautifulSoup(page.content(), "lxml")
+        browser.close()
+
+    for item in soup.select("li.linha"):
+        numero = item.select_one(".linha-numero")
+        nome = item.select_one(".linha-nome")
+        status = item.select_one(".linha-situacao")
+
+        if numero and nome and status:
+            linha = normalizar_nome(
+                numero.get_text(strip=True),
+                nome.get_text(strip=True),
+            )
+            dados[linha] = status.get_text(strip=True)
+
+    print(f"🚇 Metrô capturado: {len(dados)} linhas")
+    return dados
+
+# =====================================================
+# SCRAPER CPTM (API JSON)
+# =====================================================
+
+def capturar_cptm():
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json; charset=UTF-8",
+        "User-Agent": "Mozilla/5.0",
+    }
+
+    try:
+        resp = requests.post(URL_CPTM_API, headers=headers, timeout=15)
+        resp.raise_for_status()
+        data = resp.json()
+    except Exception as e:
+        print("❌ Erro ao acessar API CPTM:", e)
+        return {}
+
+    dados = {}
+
+    for item in data.get("d", []):
+        numero = item.get("Linha")
+        nome = item.get("Cor")
+        status = item.get("Situacao")
+
+        if numero and nome and status:
+            linha = normalizar_nome(numero, nome)
+            dados[linha] = status
+
+    print(f"🚆 CPTM capturada via API: {len(dados)} linhas")
+    return dados
+
+# =====================================================
+# MAIN
+# =====================================================
+
+def main():
+    print("🚇🚆 Monitoramento Metrô + CPTM iniciado")
+
+    garantir_csv_existe()
+    estado_anterior = carregar_estado()
+    estado_atual = {}
+
+    dados_metro = capturar_metro()
+    dados_cptm = capturar_cptm()
+
+    dados = {**dados_metro, **dados_cptm}
+
+    if not dados:
+        print("❌ Nenhum dado capturado")
+        return
+
+    for linha, status in dados.items():
+        antigo = estado_anterior.get(linha)
+
+        if antigo is not None and antigo != status:
+            enviar_telegram(
+                f"{emoji_linha(linha, status)} **{linha}**\n"
+                f"🔄 De: {antigo}\n"
+                f"➡️ Para: **{status}**"
+            )
+            salvar_historico(linha, status, antigo)
+
+        estado_atual[linha] = status
+
+    salvar_estado(estado_atual)
+    print("✅ JSON atualizado e persistido com sucesso")
+
+
+if __name__ == "__main__":
+    main()
