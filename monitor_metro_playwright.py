@@ -19,6 +19,7 @@ ARQUIVO_HISTORICO = os.path.join(BASE_DIR, "historico_transporte.csv")
 
 URL_METRO = "https://www.metro.sp.gov.br/wp-content/themes/metrosp/direto-metro.php"
 URL_VIAMOBILIDADE = "https://trilhos.motiva.com.br/viamobilidade8e9/situacao-das-linhas/"
+URL_CPTM = "https://www.cptm.sp.gov.br/cptm"
 
 # =====================================================
 # TELEGRAM
@@ -54,6 +55,8 @@ def identificar_operador(linha):
         return "metro"
     if linha.startswith("ViaMobilidade"):
         return "viamobilidade"
+    if linha.startswith("CPTM"):
+        return "cptm"
     return "desconhecido"
 
 
@@ -65,6 +68,9 @@ def emoji_status(status, operador):
 
     if operador == "viamobilidade":
         return "🚆✅" if "normal" in status else "🚆⚠️"
+
+    if operador == "cptm":
+        return "🚈✅" if "normal" in status else "🚈⚠️"
 
     return "❓"
 
@@ -137,14 +143,12 @@ def capturar_metro():
         r = requests.get(
             URL_METRO,
             timeout=15,
-            headers={
-                "User-Agent": "Mozilla/5.0 (compatible; MonitorTransporte/1.0)"
-            }
+            headers={"User-Agent": "Mozilla/5.0 (MonitorTransporte)"}
         )
         r.raise_for_status()
     except Exception as e:
-        print(f"⚠️ Falha ao acessar site do Metrô: {e}")
-        return dados  # fallback seguro
+        print(f"⚠️ Falha ao acessar Metrô: {e}")
+        return dados
 
     soup = BeautifulSoup(r.text, "lxml")
 
@@ -162,7 +166,6 @@ def capturar_metro():
                 "descricao": extrair_descricao(status_txt),
             }
 
-    print(f"🚇 Metrô capturado: {len(dados)} linhas")
     return dados
 
 # =====================================================
@@ -187,12 +190,43 @@ def capturar_viamobilidade():
 
         if "operação normal" in texto:
             for linha in dados:
-                dados[linha] = {
-                    "status": "Operação normal",
-                    "descricao": None,
-                }
+                dados[linha] = {"status": "Operação normal", "descricao": None}
     except Exception as e:
         print(f"⚠️ Falha ao acessar ViaMobilidade: {e}")
+
+    return dados
+
+# =====================================================
+# SCRAPING CPTM
+# =====================================================
+
+def capturar_cptm():
+    dados = {}
+
+    try:
+        r = requests.get(
+            URL_CPTM,
+            timeout=20,
+            headers={"User-Agent": "Mozilla/5.0 (MonitorTransporte)"}
+        )
+        r.raise_for_status()
+    except Exception as e:
+        print(f"⚠️ Falha ao acessar CPTM: {e}")
+        return dados
+
+    soup = BeautifulSoup(r.text, "lxml")
+    texto = soup.get_text("\n", strip=True)
+
+    for linha_num in ["7", "8", "9", "10", "11", "12", "13"]:
+        if f"Linha {linha_num}" in texto:
+            trecho = texto.split(f"Linha {linha_num}", 1)[1][:200]
+            status_txt = "Operação normal" if "normal" in trecho.lower() else trecho.split("\n")[0]
+
+            linha_nome = f"CPTM – Linha {linha_num}"
+            dados[linha_nome] = {
+                "status": status_txt,
+                "descricao": extrair_descricao(status_txt),
+            }
 
     return dados
 
@@ -207,6 +241,7 @@ def main():
     estado_atual = {}
     estado_atual.update(capturar_metro())
     estado_atual.update(capturar_viamobilidade())
+    estado_atual.update(capturar_cptm())
 
     for linha, info in estado_atual.items():
         novo_status = info["status"]
