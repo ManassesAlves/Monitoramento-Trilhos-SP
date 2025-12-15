@@ -40,9 +40,21 @@ def enviar_telegram(msg):
         return
     requests.post(
         f"https://api.telegram.org/bot{TOKEN}/sendMessage",
-        data={"chat_id": CHAT_ID, "text": msg, "parse_mode": "Markdown"},
+        data={
+            "chat_id": CHAT_ID,
+            "text": msg,
+            "parse_mode": "Markdown",
+        },
         timeout=10,
     )
+
+
+def identificar_operador(linha):
+    if linha.startswith("Linha"):
+        return "metro"
+    if linha.startswith("ViaMobilidade"):
+        return "viamobilidade"
+    return "desconhecido"
 
 
 def emoji_status(status, operador):
@@ -57,12 +69,11 @@ def emoji_status(status, operador):
     return "❓"
 
 
-def identificar_operador(linha):
-    if linha.startswith("Linha"):
-        return "metro"
-    if linha.startswith("ViaMobilidade"):
-        return "viamobilidade"
-    return "desconhecido"
+def extrair_descricao(status_texto):
+    texto = status_texto.strip()
+    if "normal" in texto.lower():
+        return None
+    return texto  # usa o texto completo como descrição do problema
 
 # =====================================================
 # PERSISTÊNCIA
@@ -78,6 +89,7 @@ def garantir_csv_existe():
                 "Linha",
                 "Status Novo",
                 "Status Antigo",
+                "Descricao",
             ])
 
 
@@ -93,7 +105,7 @@ def salvar_estado(estado):
         json.dump(estado, f, ensure_ascii=False, indent=2)
 
 
-def salvar_historico(linha, novo, antigo):
+def salvar_historico(linha, novo, antigo, descricao):
     garantir_csv_existe()
     t = agora_sp()
     with open(ARQUIVO_HISTORICO, "a", newline="", encoding="utf-8") as f:
@@ -104,14 +116,16 @@ def salvar_historico(linha, novo, antigo):
             linha,
             novo,
             antigo,
+            descricao or "",
         ])
 
 # =====================================================
-# SCRAPING
+# SCRAPING METRÔ
 # =====================================================
 
 def capturar_metro():
     dados = {}
+
     r = requests.get(URL_METRO, timeout=30)
     soup = BeautifulSoup(r.text, "lxml")
 
@@ -122,23 +136,43 @@ def capturar_metro():
 
         if numero and nome and status:
             linha = f"Linha {numero.text.strip()} – {nome.text.strip()}"
-            dados[linha] = status.text.strip()
+            status_txt = status.text.strip()
+
+            dados[linha] = {
+                "status": status_txt,
+                "descricao": extrair_descricao(status_txt),
+            }
 
     return dados
 
+# =====================================================
+# SCRAPING VIAMOBILIDADE
+# =====================================================
 
 def capturar_viamobilidade():
     dados = {
-        "ViaMobilidade – Linha 8 Diamante": "Status indefinido",
-        "ViaMobilidade – Linha 9 Esmeralda": "Status indefinido",
+        "ViaMobilidade – Linha 8 Diamante": {
+            "status": "Status indefinido",
+            "descricao": "Status não identificado no site",
+        },
+        "ViaMobilidade – Linha 9 Esmeralda": {
+            "status": "Status indefinido",
+            "descricao": "Status não identificado no site",
+        },
     }
 
     r = requests.get(URL_VIAMOBILIDADE, timeout=30)
     texto = r.text.lower()
 
     if "operação normal" in texto:
-        dados["ViaMobilidade – Linha 8 Diamante"] = "Operação normal"
-        dados["ViaMobilidade – Linha 9 Esmeralda"] = "Operação normal"
+        dados["ViaMobilidade – Linha 8 Diamante"] = {
+            "status": "Operação normal",
+            "descricao": None,
+        }
+        dados["ViaMobilidade – Linha 9 Esmeralda"] = {
+            "status": "Operação normal",
+            "descricao": None,
+        }
 
     return dados
 
@@ -154,22 +188,29 @@ def main():
     estado_atual.update(capturar_metro())
     estado_atual.update(capturar_viamobilidade())
 
-    for linha, status in estado_atual.items():
-        antigo = estado_anterior.get(linha)
+    for linha, info in estado_atual.items():
+        novo_status = info["status"]
+        descricao = info.get("descricao")
 
-        if antigo is not None and antigo != status:
+        antigo_status = None
+        if linha in estado_anterior:
+            antigo_status = estado_anterior[linha]["status"]
+
+        if antigo_status is not None and antigo_status != novo_status:
             operador = identificar_operador(linha)
-            emoji = emoji_status(status, operador)
+            emoji = emoji_status(novo_status, operador)
 
-            enviar_telegram(
+            mensagem = (
                 f"{emoji} **{linha}**\n"
-                f"🔄 De: {antigo}\n"
-                f"➡️ Para: **{status}**"
+                f"🔄 De: {antigo_status}\n"
+                f"➡️ Para: **{novo_status}**"
             )
 
-            salvar_historico(linha, status, antigo)
+            if descricao:
+                mensagem += f"\n📝 Motivo: {descricao}"
 
-        estado_atual[linha] = status
+            enviar_telegram(mensagem)
+            salvar_historico(linha, novo_status, antigo_status, descricao)
 
     salvar_estado(estado_atual)
 
