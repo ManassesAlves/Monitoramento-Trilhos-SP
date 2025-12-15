@@ -40,11 +40,7 @@ def enviar_telegram(msg):
         return
     requests.post(
         f"https://api.telegram.org/bot{TOKEN}/sendMessage",
-        data={
-            "chat_id": CHAT_ID,
-            "text": msg,
-            "parse_mode": "Markdown",
-        },
+        data={"chat_id": CHAT_ID, "text": msg, "parse_mode": "Markdown"},
         timeout=10,
     )
 
@@ -70,10 +66,17 @@ def emoji_status(status, operador):
 
 
 def extrair_descricao(status_texto):
-    texto = status_texto.strip()
-    if "normal" in texto.lower():
+    if "normal" in status_texto.lower():
         return None
-    return texto  # usa o texto completo como descrição do problema
+    return status_texto.strip()
+
+
+def obter_status_antigo(valor):
+    if isinstance(valor, dict):
+        return valor.get("status")
+    if isinstance(valor, str):
+        return valor
+    return None
 
 # =====================================================
 # PERSISTÊNCIA
@@ -120,12 +123,11 @@ def salvar_historico(linha, novo, antigo, descricao):
         ])
 
 # =====================================================
-# SCRAPING METRÔ
+# SCRAPING
 # =====================================================
 
 def capturar_metro():
     dados = {}
-
     r = requests.get(URL_METRO, timeout=30)
     soup = BeautifulSoup(r.text, "lxml")
 
@@ -145,9 +147,6 @@ def capturar_metro():
 
     return dados
 
-# =====================================================
-# SCRAPING VIAMOBILIDADE
-# =====================================================
 
 def capturar_viamobilidade():
     dados = {
@@ -165,14 +164,8 @@ def capturar_viamobilidade():
     texto = r.text.lower()
 
     if "operação normal" in texto:
-        dados["ViaMobilidade – Linha 8 Diamante"] = {
-            "status": "Operação normal",
-            "descricao": None,
-        }
-        dados["ViaMobilidade – Linha 9 Esmeralda"] = {
-            "status": "Operação normal",
-            "descricao": None,
-        }
+        for linha in dados:
+            dados[linha] = {"status": "Operação normal", "descricao": None}
 
     return dados
 
@@ -192,9 +185,7 @@ def main():
         novo_status = info["status"]
         descricao = info.get("descricao")
 
-        antigo_status = None
-        if linha in estado_anterior:
-            antigo_status = estado_anterior[linha]["status"]
+        antigo_status = obter_status_antigo(estado_anterior.get(linha))
 
         if antigo_status is not None and antigo_status != novo_status:
             operador = identificar_operador(linha)
