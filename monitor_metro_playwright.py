@@ -6,22 +6,15 @@ import csv
 import requests
 from datetime import datetime, timedelta, timezone
 
-# ===============================
-# URLS
-# ===============================
-
 URL_METRO = "https://www.metro.sp.gov.br/wp-content/themes/metrosp/direto-metro.php"
 URL_CPTM = "https://www.cptm.sp.gov.br/Pages/Situacao-Linhas.aspx"
-
-# ===============================
-# CONFIG
-# ===============================
 
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 
 ARQUIVO_ESTADO = "estado_metro.json"
 ARQUIVO_HISTORICO = "historico_metro.csv"
+
 
 # ===============================
 # UTIL
@@ -39,6 +32,7 @@ def enviar_telegram(msg):
         data={"chat_id": CHAT_ID, "text": msg, "parse_mode": "Markdown"},
         timeout=10,
     )
+
 
 # ===============================
 # PERSISTÊNCIA
@@ -76,6 +70,7 @@ def salvar_historico(linha, novo, antigo):
             antigo,
         ])
 
+
 # ===============================
 # NORMALIZAÇÃO / EMOJIS
 # ===============================
@@ -86,8 +81,7 @@ def normalizar_nome(numero, nome):
 
 def tipo_linha(nome):
     try:
-        n = int(nome.split()[1])
-        return "CPTM" if n >= 7 else "METRO"
+        return "CPTM" if int(nome.split()[1]) >= 7 else "METRO"
     except:
         return "METRO"
 
@@ -97,6 +91,7 @@ def emoji_linha(linha, status):
     if tipo_linha(linha) == "CPTM":
         return "🚆✅" if ok else "🚆⚠️"
     return "🚇✅" if ok else "🚇⚠️"
+
 
 # ===============================
 # SCRAPER METRÔ
@@ -110,7 +105,7 @@ def capturar_metro(page):
     except:
         pass
 
-    page.wait_for_timeout(3000)
+    page.wait_for_selector("li.linha", timeout=10000)
     soup = BeautifulSoup(page.content(), "lxml")
 
     dados = {}
@@ -120,20 +115,89 @@ def capturar_metro(page):
         status = item.select_one(".linha-situacao")
 
         if numero and nome and status:
-            linha = normalizar_nome(
+            dados[normalizar_nome(
                 numero.get_text(strip=True),
-                nome.get_text(strip=True),
-            )
-            dados[linha] = status.get_text(strip=True)
+                nome.get_text(strip=True)
+            )] = status.get_text(strip=True)
 
+    print(f"🚇 Metrô capturado: {len(dados)} linhas")
     return dados
 
+
 # ===============================
-# SCRAPER CPTM
+# SCRAPER CPTM (CORRIGIDO)
 # ===============================
 
 def capturar_cptm(page):
     page.goto(URL_CPTM, timeout=60000)
-    page.wait_for_timeout(4000)
+
+    # ⏳ aguarda JS renderizar
+    try:
+        page.wait_for_selector(".linha", timeout=15000)
+    except:
+        print("⚠️ CPTM não carregou elementos")
+        return {}
 
     soup = BeautifulSoup(page.content(), "lxml")
+    dados = {}
+
+    for item in soup.select(".linha"):
+        numero = item.select_one(".numero")
+        nome = item.select_one(".nome")
+        status = item.select_one(".status")
+
+        if numero and nome and status:
+            dados[normalizar_nome(
+                numero.get_text(strip=True),
+                nome.get_text(strip=True)
+            )] = status.get_text(strip=True)
+
+    print(f"🚆 CPTM capturada: {len(dados)} linhas")
+    return dados
+
+
+# ===============================
+# MAIN
+# ===============================
+
+def main():
+    print("🚇🚆 Monitoramento iniciado")
+
+    garantir_csv_existe()
+    estado_anterior = carregar_estado()
+    estado_atual = {}
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+
+        dados_metro = capturar_metro(page)
+        dados_cptm = capturar_cptm(page)
+
+        browser.close()
+
+    dados = {**dados_metro, **dados_cptm}
+
+    if not dados:
+        print("❌ Nenhum dado capturado")
+        return
+
+    for linha, status in dados.items():
+        antigo = estado_anterior.get(linha)
+
+        if antigo is not None and antigo != status:
+            enviar_telegram(
+                f"{emoji_linha(linha, status)} **{linha}**\n"
+                f"🔄 De: {antigo}\n"
+                f"➡️ Para: **{status}**"
+            )
+            salvar_historico(linha, status, antigo)
+
+        estado_atual[linha] = status
+
+    salvar_estado(estado_atual)
+    print("✅ JSON atualizado com sucesso")
+
+
+if __name__ == "__main__":
+    main()
