@@ -1,10 +1,34 @@
 {
-  "Linha 1 – Azul": "Operação Normal",
-  "Linha 2 – Verde": "Velocidade Reduzida",
-  "Linha 3 – Vermelha": "Operação Normal",
-  "Linha 4 – Amarela": "Operação Normal",
-  "Linha 5 – Lilás": "Operação Normal",
-  "Linha 15 – Prata": "Operação Normal",
-  "ViaMobilidade – Linha 8 Diamante": "Operação normal",
-  "ViaMobilidade – Linha 9 Esmeralda": "Operação normal"
+  "Linha 1 – Azul": {
+    "status": "Operação Normal",
+    "descricao": null
+  },
+  "Linha 2 – Verde": {
+    "status": "Operação Normal",
+    "descricao": null
+  },
+  "Linha 3 – Vermelha": {
+    "status": "Operação Normal",
+    "descricao": null
+  },
+  "Linha 4 – Amarela": {
+    "status": "Operação Normal",
+    "descricao": null
+  },
+  "Linha 5 – Lilás": {
+    "status": "Operação Normal",
+    "descricao": null
+  },
+  "Linha 15 – Prata": {
+    "status": "Operação Normal",
+    "descricao": null
+  },
+  "ViaMobilidade – Linha 8 Diamante": {
+    "status": "Operação normal",
+    "descricao": null
+  },
+  "ViaMobilidade – Linha 9 Esmeralda": {
+    "status": "Operação normal",
+    "descricao": null
+  }
 }
