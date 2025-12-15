@@ -37,19 +37,30 @@ def carregar_estado():
 
 
 def salvar_estado(estado):
-    # garante criação do arquivo
     with open(ARQUIVO_ESTADO, "w", encoding="utf-8") as f:
         json.dump(estado, f, ensure_ascii=False, indent=2)
 
 
+def garantir_csv_existe():
+    """Garante que o CSV exista mesmo sem mudanças"""
+    if not os.path.exists(ARQUIVO_HISTORICO):
+        with open(ARQUIVO_HISTORICO, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow([
+                "Data",
+                "Hora",
+                "Linha",
+                "Status Novo",
+                "Status Antigo",
+            ])
+
+
 def salvar_historico(linha, novo, antigo):
-    existe = os.path.exists(ARQUIVO_HISTORICO)
+    garantir_csv_existe()
+    t = agora_sp()
+
     with open(ARQUIVO_HISTORICO, "a", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
-        if not existe:
-            writer.writerow(["Data", "Hora", "Linha", "Status Novo", "Status Antigo"])
-
-        t = agora_sp()
         writer.writerow([
             t.strftime("%Y-%m-%d"),
             t.strftime("%H:%M:%S"),
@@ -94,7 +105,9 @@ def main():
 
     dados = capturar_status()
 
-    # GARANTE criação mesmo se não houver mudança
+    # garante CSV sempre
+    garantir_csv_existe()
+
     for linha, status in dados.items():
         antigo = estado_anterior.get(linha)
 
@@ -109,7 +122,7 @@ def main():
 
     salvar_estado(estado_atual)
 
-    print("✅ Arquivos JSON e CSV garantidos")
+    print("✅ Execução concluída")
 
 
 if __name__ == "__main__":
