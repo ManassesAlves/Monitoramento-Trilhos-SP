@@ -15,13 +15,15 @@ ARQUIVO_ESTADO = "estado_metro.json"
 ARQUIVO_HISTORICO = "historico_metro.csv"
 
 
-def get_horario_sp():
+def agora_sp():
     return datetime.now(timezone(timedelta(hours=-3)))
 
 
 def enviar_telegram(msg):
     if not TOKEN or not CHAT_ID:
+        print("Telegram não configurado.")
         return
+
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
     requests.post(url, data={
         "chat_id": CHAT_ID,
@@ -34,7 +36,7 @@ def carregar_estado():
     if os.path.exists(ARQUIVO_ESTADO):
         with open(ARQUIVO_ESTADO, "r", encoding="utf-8") as f:
             return json.load(f)
-    return {}
+    return None
 
 
 def salvar_estado(estado):
@@ -44,16 +46,18 @@ def salvar_estado(estado):
 
 def salvar_historico(linha, novo, antigo):
     existe = os.path.exists(ARQUIVO_HISTORICO)
-    agora = get_horario_sp()
+    t = agora_sp()
 
     with open(ARQUIVO_HISTORICO, "a", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         if not existe:
             writer.writerow(["Data", "Hora", "Linha", "Status Novo", "Status Antigo"])
         writer.writerow([
-            agora.strftime("%Y-%m-%d"),
-            agora.strftime("%H:%M:%S"),
-            linha, novo, antigo
+            t.strftime("%Y-%m-%d"),
+            t.strftime("%H:%M:%S"),
+            linha,
+            novo,
+            antigo or "INICIAL"
         ])
 
 
@@ -63,7 +67,6 @@ def capturar_status():
         page = browser.new_page()
         page.goto(URL, timeout=60000)
 
-        # aceitar cookies
         try:
             page.click("button:has-text('Aceitar')", timeout=5000)
         except:
@@ -74,22 +77,23 @@ def capturar_status():
         browser.close()
 
     soup = BeautifulSoup(html, "lxml")
-    resultado = {}
+    dados = {}
 
     for item in soup.select("li.linha"):
         nome = item.select_one(".linha-nome")
         status = item.select_one(".linha-situacao")
 
         if nome and status:
-            resultado[nome.get_text(strip=True)] = status.get_text(strip=True)
+            dados[nome.get_text(strip=True)] = status.get_text(strip=True)
 
-    return resultado
+    return dados
 
 
 def main():
-    print("Iniciando monitoramento Direto do Metrô")
+    print("🚇 Monitoramento Direto do Metrô iniciado")
 
     estado_anterior = carregar_estado()
+    primeira_execucao = estado_anterior is None
     estado_atual = {}
 
     dados = capturar_status()
@@ -98,23 +102,30 @@ def main():
         print("Nenhum dado capturado.")
         return
 
+    if primeira_execucao:
+        msg = "📡 **Monitoramento do Metrô iniciado**\n\n"
+        for linha, status in dados.items():
+            msg += f"🚇 Linha {linha}: **{status}**\n"
+        enviar_telegram(msg)
+
     for linha, status in dados.items():
-        antigo = estado_anterior.get(linha)
+        antigo = estado_anterior.get(linha) if estado_anterior else None
 
         if antigo and antigo != status:
             emoji = "✅" if "Normal" in status else "⚠️"
-            mensagem = (
+            msg = (
                 f"{emoji} **Linha {linha}**\n"
                 f"🔄 De: {antigo}\n"
                 f"➡️ Para: **{status}**"
             )
-            enviar_telegram(mensagem)
+            enviar_telegram(msg)
             salvar_historico(linha, status, antigo)
 
         estado_atual[linha] = status
 
     salvar_estado(estado_atual)
-    print("Monitoramento concluído com sucesso.")
+
+    print("✅ Monitoramento concluído com sucesso")
 
 
 if __name__ == "__main__":
