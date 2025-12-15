@@ -1,4 +1,5 @@
 from playwright.sync_api import sync_playwright
+from bs4 import BeautifulSoup
 import json
 import os
 import sys
@@ -43,75 +44,65 @@ def salvar_estado_atual(estado):
         json.dump(estado, f, indent=4, ensure_ascii=False)
 
 
-def salvar_historico(linha, status_novo, status_antigo, descricao):
+def salvar_historico(linha, status_novo, status_antigo):
     arquivo_existe = os.path.exists(ARQUIVO_HISTORICO)
     agora = get_horario_sp()
     with open(ARQUIVO_HISTORICO, "a", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         if not arquivo_existe:
-            writer.writerow([
-                "Data", "Hora", "Linha",
-                "Status_Novo", "Status_Anterior", "Descricao"
-            ])
+            writer.writerow(["Data", "Hora", "Linha", "Status_Novo", "Status_Anterior"])
         writer.writerow([
             agora.strftime("%Y-%m-%d"),
             agora.strftime("%H:%M:%S"),
-            linha, status_novo, status_antigo, descricao
+            linha, status_novo, status_antigo
         ])
 
 
-def capturar_status():
+def capturar_status_html():
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()
 
-        dados_json = None
-
-        def handle_response(response):
-            nonlocal dados_json
-            ct = response.headers.get("content-type", "")
-            if "application/json" in ct:
-                try:
-                    data = response.json()
-                    if isinstance(data, list) and len(data) > 0:
-                        # heurística: lista com status das linhas
-                        dados_json = data
-                except:
-                    pass
-
-        page.on("response", handle_response)
-
         page.goto(URL, timeout=60000)
 
-        # Aceitar cookies (se existir)
+        # Aceitar cookies
         try:
             page.click("button:has-text('Aceitar')", timeout=5000)
         except:
             pass
 
-        page.wait_for_timeout(5000)
+        page.wait_for_timeout(3000)
+        html = page.content()
         browser.close()
 
-        return dados_json
+    soup = BeautifulSoup(html, "lxml")
+
+    dados = {}
+
+    # 🔎 Cada linha fica em um card/div — seletor robusto
+    for card in soup.select(".linha"):
+        nome = card.select_one(".nome")
+        status = card.select_one(".status")
+
+        if nome and status:
+            dados[nome.get_text(strip=True)] = status.get_text(strip=True)
+
+    return dados
 
 
 def main():
-    print("Iniciando monitoramento via Playwright")
+    print("Iniciando monitoramento via Playwright + HTML")
 
     estado_anterior = carregar_estado_anterior()
     novo_estado = estado_anterior.copy()
 
-    linhas = capturar_status()
+    linhas = capturar_status_html()
 
     if not linhas:
-        print("Não foi possível capturar os dados.")
+        print("Não foi possível extrair dados do HTML.")
         sys.exit(1)
 
-    for linha in linhas:
-        nome = linha.get("linha") or linha.get("nome") or "Linha"
-        status_atual = linha.get("status") or linha.get("situacao")
-        descricao = linha.get("descricao", "")
-
+    for nome, status_atual in linhas.items():
         status_antigo = estado_anterior.get(nome)
 
         if status_antigo and status_antigo != status_atual:
@@ -121,11 +112,8 @@ def main():
                 f"🔄 De: {status_antigo}\n"
                 f"➡️ Para: **{status_atual}**"
             )
-            if descricao:
-                msg += f"\n\n📢 _{descricao}_"
-
             enviar_telegram(msg)
-            salvar_historico(nome, status_atual, status_antigo, descricao)
+            salvar_historico(nome, status_atual, status_antigo)
 
         novo_estado[nome] = status_atual
 
