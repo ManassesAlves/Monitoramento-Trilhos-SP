@@ -1,4 +1,4 @@
-# 🚇 Monitoramento de Transporte – SP (Metrô, CPTM e ViaMobilidade)
+# 🚇 Monitoramento de Trilhos – SP (Metrô, CPTM e ViaMobilidade)
 
 Este projeto realiza o **monitoramento automático da situação operacional** das linhas de transporte sobre trilhos da Região Metropolitana de São Paulo, abrangendo:
 
