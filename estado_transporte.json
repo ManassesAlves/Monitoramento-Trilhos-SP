@@ -31,32 +31,32 @@
     "status": "Operação normal",
     "descricao": null
   },
-  "CPTM – Linha 7 – Rubi": {
-    "status": "Status indisponível",
-    "descricao": "Falha ao carregar site da CPTM"
-  },
-  "CPTM – Linha 8 – Diamante": {
-    "status": "Status indisponível",
-    "descricao": "Falha ao carregar site da CPTM"
-  },
-  "CPTM – Linha 9 – Esmeralda": {
-    "status": "Status indisponível",
-    "descricao": "Falha ao carregar site da CPTM"
-  },
   "CPTM – Linha 10 – Turquesa": {
-    "status": "Status indisponível",
-    "descricao": "Falha ao carregar site da CPTM"
-  },
-  "CPTM – Linha 11 – Coral": {
-    "status": "Status indisponível",
-    "descricao": "Falha ao carregar site da CPTM"
+    "status": "Operação normal",
+    "descricao": null
   },
   "CPTM – Linha 12 – Safira": {
-    "status": "Status indisponível",
-    "descricao": "Falha ao carregar site da CPTM"
+    "status": "Operação normal",
+    "descricao": null
+  },
+  "CPTM – Linha 11 – Coral": {
+    "status": "Operação normal",
+    "descricao": null
+  },
+  "CPTM – Linha 7 – Rubi": {
+    "status": "Operação normal",
+    "descricao": null
+  },
+  "CPTM – Linha 9 – Esmeralda": {
+    "status": "Operação normal",
+    "descricao": null
+  },
+  "CPTM – Linha 8 – Diamante": {
+    "status": "Operação normal",
+    "descricao": null
   },
   "CPTM – Linha 13 – Jade": {
-    "status": "Status indisponível",
-    "descricao": "Falha ao carregar site da CPTM"
+    "status": "Operação normal",
+    "descricao": null
   }
 }
