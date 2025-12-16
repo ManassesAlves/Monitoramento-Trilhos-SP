@@ -1,4 +1,4 @@
-name: Monitoramento Transporte SP
+name: Monitoramento Metro SP
 
 on:
   schedule:
@@ -22,29 +22,24 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Instalar dependências Python
+      - name: Instalar dependências
         run: |
           pip install --upgrade pip
-          pip install requests beautifulsoup4 lxml playwright
-
-      - name: Instalar navegador Chromium (Playwright)
-        run: |
-          playwright install chromium
+          pip install requests beautifulsoup4 lxml
 
       - name: Executar monitoramento
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          TELEGRAM_ADMIN_CHAT_ID: ${{ secrets.TELEGRAM_ADMIN_CHAT_ID }}
         run: |
-          python monitor_metro_playwright.py
+          python monitor_metro.py
 
       - name: Commit arquivos de estado (se houver alterações)
         run: |
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
-          git add estado_transporte.json historico_transporte.csv hash_sites.json || true
-          git diff --cached --quiet || git commit -m "Atualiza estado do transporte [bot]"
+          git add estado_transporte.json historico_transporte.csv || true
+          git diff --cached --quiet || git commit -m "Atualiza estado do metrô [bot]"
 
       - name: Push alterações
         uses: ad-m/github-push-action@v0.8.0
