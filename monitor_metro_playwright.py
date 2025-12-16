@@ -101,6 +101,8 @@ def emoji_status(status, operador):
     s = status.lower()
     if "encerrada" in s:
         return {"metro": "🚇⛔", "viamobilidade": "🚆⛔", "cptm": "🚈⛔"}.get(operador, "⛔")
+    if "indisponível" in s:
+        return "🛠️"
     return {
         "metro": "🚇✅" if "normal" in s else "🚇⚠️",
         "viamobilidade": "🚆✅" if "normal" in s else "🚆⚠️",
@@ -234,17 +236,21 @@ def capturar_viamobilidade():
         "ViaMobilidade – Linha 8 Diamante": "linha 8",
         "ViaMobilidade – Linha 9 Esmeralda": "linha 9",
     }
-    dados = {l: {"status": "Operação normal", "descricao": None} for l in linhas}
+    dados = {}
 
     try:
         r = requests.get(URL_VIAMOBILIDADE, timeout=30)
         r.raise_for_status()
         verificar_mudanca_estrutura("ViaMobilidade", r.text)
+        texto = r.text.lower()
     except Exception as e:
-        print(f"⚠️ ViaMobilidade fora: {e}")
+        for l in linhas:
+            dados[l] = {
+                "status": "Status indisponível",
+                "descricao": "Falha ao acessar site da ViaMobilidade",
+            }
         return dados
 
-    texto = r.text.lower()
     for linha, chave in linhas.items():
         trecho = texto.split(chave, 1)[1][:800] if chave in texto else texto
         status, desc = classificar_status(trecho)
@@ -253,7 +259,7 @@ def capturar_viamobilidade():
     return dados
 
 # =====================================================
-# SCRAPING CPTM (PLAYWRIGHT — CORRIGIDO)
+# SCRAPING CPTM (PLAYWRIGHT — ESTADO CONSISTENTE)
 # =====================================================
 
 def capturar_cptm():
@@ -269,7 +275,7 @@ def capturar_cptm():
         "Linha 13": "CPTM – Linha 13 – Jade",
     }
 
-    dados = {nome: {"status": "Operação normal", "descricao": None} for nome in linhas.values()}
+    dados = {}
 
     try:
         with sync_playwright() as p:
@@ -290,13 +296,23 @@ def capturar_cptm():
     except TimeoutError:
         enviar_telegram_admin(
             "🛠️ *Alerta técnico*\n"
-            "CPTM: bloco 'Situação das Linhas' não carregou.\n"
-            "Possível mudança estrutural."
+            "CPTM: falha ao carregar Situação das Linhas.\n"
+            "Estado marcado como indisponível."
         )
+        for nome in linhas.values():
+            dados[nome] = {
+                "status": "Status indisponível",
+                "descricao": "Falha ao carregar site da CPTM",
+            }
         return dados
 
     except Exception as e:
         print(f"⚠️ CPTM Playwright falhou: {e}")
+        for nome in linhas.values():
+            dados[nome] = {
+                "status": "Status indisponível",
+                "descricao": "Erro inesperado no scraping da CPTM",
+            }
         return dados
 
     for chave, nome_padrao in linhas.items():
@@ -304,6 +320,11 @@ def capturar_cptm():
             trecho = texto.split(chave.lower(), 1)[1][:1000]
             status, desc = classificar_status(trecho)
             dados[nome_padrao] = {"status": status, "descricao": desc}
+        else:
+            dados[nome_padrao] = {
+                "status": "Status indisponível",
+                "descricao": "Linha não encontrada no conteúdo renderizado",
+            }
 
     return dados
 
@@ -336,6 +357,7 @@ def main():
             enviar_telegram(msg)
             salvar_historico(linha, novo, antigo, desc)
 
+    # 🔐 Sempre salvar o estado atual (garante persistência correta)
     salvar_estado(estado_atual)
 
 # =====================================================
