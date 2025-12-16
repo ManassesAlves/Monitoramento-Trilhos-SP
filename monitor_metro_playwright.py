@@ -200,7 +200,7 @@ def salvar_historico(linha, novo, antigo, descricao):
         )
 
 # =====================================================
-# SCRAPING
+# SCRAPING METRÔ
 # =====================================================
 
 def capturar_metro():
@@ -225,6 +225,9 @@ def capturar_metro():
             }
     return dados
 
+# =====================================================
+# SCRAPING VIAMOBILIDADE
+# =====================================================
 
 def capturar_viamobilidade():
     linhas = {
@@ -249,30 +252,51 @@ def capturar_viamobilidade():
 
     return dados
 
+# =====================================================
+# SCRAPING CPTM (PLAYWRIGHT)
+# =====================================================
 
 def capturar_cptm():
-    linhas = {
-        "CPTM – Linha 7 – Rubi",
-        "CPTM – Linha 8 – Diamante",
-        "CPTM – Linha 9 – Esmeralda",
-        "CPTM – Linha 10 – Turquesa",
-        "CPTM – Linha 11 – Coral",
-        "CPTM – Linha 12 – Safira",
-        "CPTM – Linha 13 – Jade",
+    from playwright.sync_api import sync_playwright
+
+    linhas_site = {
+        "Linha 7 – Rubi": "CPTM – Linha 7 – Rubi",
+        "Linha 8 – Diamante": "CPTM – Linha 8 – Diamante",
+        "Linha 9 – Esmeralda": "CPTM – Linha 9 – Esmeralda",
+        "Linha 10 – Turquesa": "CPTM – Linha 10 – Turquesa",
+        "Linha 11 – Coral": "CPTM – Linha 11 – Coral",
+        "Linha 12 – Safira": "CPTM – Linha 12 – Safira",
+        "Linha 13 – Jade": "CPTM – Linha 13 – Jade",
     }
-    dados = {l: {"status": "Operação normal", "descricao": None} for l in linhas}
+
+    dados = {
+        nome: {"status": "Operação normal", "descricao": None}
+        for nome in linhas_site.values()
+    }
 
     try:
-        r = requests.get(URL_CPTM, timeout=20)
-        r.raise_for_status()
-        verificar_mudanca_estrutura("CPTM", r.text)
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page()
+            page.goto(URL_CPTM, timeout=30000)
+            page.wait_for_timeout(5000)
+
+            texto = page.inner_text("body").lower()
+            html = page.content()
+            browser.close()
+
+        verificar_mudanca_estrutura("CPTM", html)
+
     except Exception as e:
-        print(f"⚠️ CPTM fora: {e}")
+        print(f"⚠️ CPTM Playwright falhou: {e}")
         return dados
 
-    status, desc = classificar_status(r.text)
-    for l in dados:
-        dados[l] = {"status": status, "descricao": desc}
+    for chave_site, nome_padrao in linhas_site.items():
+        chave = chave_site.lower()
+        if chave in texto:
+            trecho = texto.split(chave, 1)[1][:600]
+            status, desc = classificar_status(trecho)
+            dados[nome_padrao] = {"status": status, "descricao": desc}
 
     return dados
 
@@ -295,11 +319,13 @@ def main():
         antigo = obter_status_antigo(estado_anterior.get(linha))
 
         if antigo is not None and antigo != novo:
-            op = identificar_operador(linha)
-            emoji = emoji_status(novo, op)
+            operador = identificar_operador(linha)
+            emoji = emoji_status(novo, operador)
+
             msg = f"{emoji} **{linha}**\n🔄 De: {antigo}\n➡️ Para: **{novo}**"
             if desc:
                 msg += f"\n📝 Motivo: {desc}"
+
             enviar_telegram(msg)
             salvar_historico(linha, novo, antigo, desc)
 
