@@ -19,3 +19,10 @@ Data,Hora,Linha,Status Novo,Status Antigo
 2025-12-16,04:51:36,Linha 15 – Prata,Operação Normal,Operação Encerrada,
 2025-12-16,16:51:50,Linha 4 – Amarela,Dados indisponíveis,Operação Normal,
 2025-12-16,16:54:32,Linha 4 – Amarela,Operação Normal,Dados indisponíveis,
+2025-12-16,17:24:33,CPTM – Linha 7 – Rubi,Status indisponível,Operação normal,Falha ao carregar site da CPTM
+2025-12-16,17:24:33,CPTM – Linha 8 – Diamante,Status indisponível,Operação normal,Falha ao carregar site da CPTM
+2025-12-16,17:24:34,CPTM – Linha 9 – Esmeralda,Status indisponível,Operação normal,Falha ao carregar site da CPTM
+2025-12-16,17:24:34,CPTM – Linha 10 – Turquesa,Status indisponível,Operação normal,Falha ao carregar site da CPTM
+2025-12-16,17:24:35,CPTM – Linha 11 – Coral,Status indisponível,Operação normal,Falha ao carregar site da CPTM
+2025-12-16,17:24:39,CPTM – Linha 12 – Safira,Status indisponível,Operação normal,Falha ao carregar site da CPTM
+2025-12-16,17:24:39,CPTM – Linha 13 – Jade,Status indisponível,Operação normal,Falha ao carregar site da CPTM
