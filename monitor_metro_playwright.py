@@ -246,55 +246,62 @@ def capturar_viamobilidade():
 
     texto = r.text.lower()
     for linha, chave in linhas.items():
-        trecho = texto.split(chave, 1)[1][:600] if chave in texto else texto
+        trecho = texto.split(chave, 1)[1][:800] if chave in texto else texto
         status, desc = classificar_status(trecho)
         dados[linha] = {"status": status, "descricao": desc}
 
     return dados
 
 # =====================================================
-# SCRAPING CPTM (PLAYWRIGHT)
+# SCRAPING CPTM (PLAYWRIGHT — CORRIGIDO)
 # =====================================================
 
 def capturar_cptm():
-    from playwright.sync_api import sync_playwright
+    from playwright.sync_api import sync_playwright, TimeoutError
 
-    linhas_site = {
-        "Linha 7 – Rubi": "CPTM – Linha 7 – Rubi",
-        "Linha 8 – Diamante": "CPTM – Linha 8 – Diamante",
-        "Linha 9 – Esmeralda": "CPTM – Linha 9 – Esmeralda",
-        "Linha 10 – Turquesa": "CPTM – Linha 10 – Turquesa",
-        "Linha 11 – Coral": "CPTM – Linha 11 – Coral",
-        "Linha 12 – Safira": "CPTM – Linha 12 – Safira",
-        "Linha 13 – Jade": "CPTM – Linha 13 – Jade",
+    linhas = {
+        "Linha 7": "CPTM – Linha 7 – Rubi",
+        "Linha 8": "CPTM – Linha 8 – Diamante",
+        "Linha 9": "CPTM – Linha 9 – Esmeralda",
+        "Linha 10": "CPTM – Linha 10 – Turquesa",
+        "Linha 11": "CPTM – Linha 11 – Coral",
+        "Linha 12": "CPTM – Linha 12 – Safira",
+        "Linha 13": "CPTM – Linha 13 – Jade",
     }
 
-    dados = {
-        nome: {"status": "Operação normal", "descricao": None}
-        for nome in linhas_site.values()
-    }
+    dados = {nome: {"status": "Operação normal", "descricao": None} for nome in linhas.values()}
 
     try:
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
             page = browser.new_page()
             page.goto(URL_CPTM, timeout=30000)
-            page.wait_for_timeout(5000)
 
-            texto = page.inner_text("body").lower()
+            page.wait_for_selector("text=Situação das Linhas", timeout=20000)
+            page.wait_for_timeout(3000)
+
+            texto = page.locator("body").inner_text().lower()
             html = page.content()
+
             browser.close()
 
         verificar_mudanca_estrutura("CPTM", html)
+
+    except TimeoutError:
+        enviar_telegram_admin(
+            "🛠️ *Alerta técnico*\n"
+            "CPTM: bloco 'Situação das Linhas' não carregou.\n"
+            "Possível mudança estrutural."
+        )
+        return dados
 
     except Exception as e:
         print(f"⚠️ CPTM Playwright falhou: {e}")
         return dados
 
-    for chave_site, nome_padrao in linhas_site.items():
-        chave = chave_site.lower()
-        if chave in texto:
-            trecho = texto.split(chave, 1)[1][:600]
+    for chave, nome_padrao in linhas.items():
+        if chave.lower() in texto:
+            trecho = texto.split(chave.lower(), 1)[1][:1000]
             status, desc = classificar_status(trecho)
             dados[nome_padrao] = {"status": status, "descricao": desc}
 
