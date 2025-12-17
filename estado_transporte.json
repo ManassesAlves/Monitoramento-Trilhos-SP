@@ -31,11 +31,19 @@
     "status": "Operação normal",
     "descricao": null
   },
-  "CPTM – Linha 13 – Jade": {
+  "CPTM – Linha 11 – Coral": {
     "status": "Operação normal",
     "descricao": null
   },
-  "CPTM – Linha 11 – Coral": {
+  "CPTM – Linha 7 – Rubi": {
+    "status": "Operação normal",
+    "descricao": null
+  },
+  "CPTM – Linha 9 – Esmeralda": {
+    "status": "Operação normal",
+    "descricao": null
+  },
+  "CPTM – Linha 12 – Safira": {
     "status": "Operação normal",
     "descricao": null
   },
@@ -47,15 +55,7 @@
     "status": "Operação normal",
     "descricao": null
   },
-  "CPTM – Linha 12 – Safira": {
-    "status": "Operação normal",
-    "descricao": null
-  },
-  "CPTM – Linha 9 – Esmeralda": {
-    "status": "Operação normal",
-    "descricao": null
-  },
-  "CPTM – Linha 7 – Rubi": {
+  "CPTM – Linha 13 – Jade": {
     "status": "Operação normal",
     "descricao": null
   }
