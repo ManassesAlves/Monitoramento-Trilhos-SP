@@ -31,7 +31,11 @@
     "status": "Operação normal",
     "descricao": null
   },
-  "CPTM – Linha 10 – Turquesa": {
+  "CPTM – Linha 11 – Coral": {
+    "status": "Operação normal",
+    "descricao": null
+  },
+  "CPTM – Linha 12 – Safira": {
     "status": "Operação normal",
     "descricao": null
   },
@@ -39,11 +43,7 @@
     "status": "Operação normal",
     "descricao": null
   },
-  "CPTM – Linha 11 – Coral": {
-    "status": "Operação normal",
-    "descricao": null
-  },
-  "CPTM – Linha 12 – Safira": {
+  "CPTM – Linha 10 – Turquesa": {
     "status": "Operação normal",
     "descricao": null
   },
