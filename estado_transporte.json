@@ -31,11 +31,19 @@
     "status": "Operação normal",
     "descricao": null
   },
-  "CPTM – Linha 11 – Coral": {
+  "CPTM – Linha 9 – Esmeralda": {
     "status": "Operação normal",
     "descricao": null
   },
   "CPTM – Linha 8 – Diamante": {
+    "status": "Operação normal",
+    "descricao": null
+  },
+  "CPTM – Linha 11 – Coral": {
+    "status": "Operação normal",
+    "descricao": null
+  },
+  "CPTM – Linha 10 – Turquesa": {
     "status": "Operação normal",
     "descricao": null
   },
@@ -48,14 +56,6 @@
     "descricao": null
   },
   "CPTM – Linha 13 – Jade": {
-    "status": "Operação normal",
-    "descricao": null
-  },
-  "CPTM – Linha 9 – Esmeralda": {
-    "status": "Operação normal",
-    "descricao": null
-  },
-  "CPTM – Linha 10 – Turquesa": {
     "status": "Operação normal",
     "descricao": null
   }
