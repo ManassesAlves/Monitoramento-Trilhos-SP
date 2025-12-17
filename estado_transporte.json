@@ -35,15 +35,11 @@
     "status": "Operação normal",
     "descricao": null
   },
-  "CPTM – Linha 8 – Diamante": {
+  "CPTM – Linha 9 – Esmeralda": {
     "status": "Operação normal",
     "descricao": null
   },
   "CPTM – Linha 11 – Coral": {
-    "status": "Operação normal",
-    "descricao": null
-  },
-  "CPTM – Linha 7 – Rubi": {
     "status": "Operação normal",
     "descricao": null
   },
@@ -55,7 +51,11 @@
     "status": "Operação normal",
     "descricao": null
   },
-  "CPTM – Linha 9 – Esmeralda": {
+  "CPTM – Linha 7 – Rubi": {
+    "status": "Operação normal",
+    "descricao": null
+  },
+  "CPTM – Linha 8 – Diamante": {
     "status": "Operação normal",
     "descricao": null
   }
