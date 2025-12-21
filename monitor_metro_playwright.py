@@ -76,7 +76,7 @@ def enviar_telegram(msg):
 
 def emoji_status(status):
     s = status.lower()
-    if "encerrada" in s or "paralisada" in s:
+    if "paralisada" in s or "encerrada" in s:
         return "🚇⛔"
     if "normal" in s:
         return "🚇✅"
@@ -91,17 +91,34 @@ def obter_status_antigo(valor):
     return None
 
 
+# =====================================================
+# CLASSIFICAÇÃO DE STATUS (AJUSTADA LINHA 15)
+# =====================================================
+
 def classificar_status(texto):
     t = texto.lower()
 
+    # 1️⃣ Paralisação / encerramento (prioridade máxima)
     for p in PADROES_ENCERRADA:
         if p in t:
             return "Operação Paralisada", texto.strip()
 
-    for p in PADROES_PROBLEMA:
+    # 2️⃣ Problemas / restrições (inclui Linha 15 – Prata)
+    PADROES_PROBLEMA_EXPANDIDO = PADROES_PROBLEMA + [
+        "operação assistida",
+        "restrição operacional",
+        "circulação diferenciada",
+        "sistema em contingência",
+        "contingência",
+        "pae",
+        "monotrilho",
+    ]
+
+    for p in PADROES_PROBLEMA_EXPANDIDO:
         if p in t:
             return p.title(), texto.strip()
 
+    # 3️⃣ Normal (somente se nada acima foi encontrado)
     for p in PADROES_NORMAL:
         if p in t:
             return "Operação normal", None
@@ -148,7 +165,7 @@ def salvar_historico(linha, novo, antigo, motivo):
         )
 
 # =====================================================
-# SCRAPING METRÔ SP (CORRIGIDO)
+# SCRAPING METRÔ SP (ROBUSTO)
 # =====================================================
 
 def capturar_metro():
@@ -172,7 +189,7 @@ def capturar_metro():
 
         linha_nome = f"Linha {numero.text.strip()} – {nome.text.strip()}"
 
-        # 🔍 TEXTO COMPLETO DA LINHA (status + motivo)
+        # 🔍 Texto completo da linha (status + motivo real)
         texto_completo = item.get_text(" ", strip=True)
 
         status, motivo = classificar_status(texto_completo)
