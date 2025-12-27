@@ -8,8 +8,8 @@
     "motivo": null
   },
   "Linha 3 – Vermelha": {
-    "status": "Operação normal",
-    "motivo": null
+    "status": "Velocidade Reduzida",
+    "motivo": "3 Vermelha Velocidade Reduzida"
   },
   "Linha 4 – Amarela": {
     "status": "Operação normal",
