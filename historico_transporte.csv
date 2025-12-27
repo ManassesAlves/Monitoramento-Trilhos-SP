@@ -158,3 +158,9 @@ Data,Hora,Linha,Status Novo,Status Antigo
 2025-12-27,00:39:13,Linha 4 – Amarela,Operação Paralisada,Operação normal,4 Amarela Operação Encerrada
 2025-12-27,00:39:14,Linha 5 – Lilás,Operação Paralisada,Operação normal,5 Lilás Operação Encerrada
 2025-12-27,00:39:17,Linha 15 – Prata,Operação Paralisada,Operação normal,15 Prata Operação Encerrada
+2025-12-27,04:44:10,Linha 1 – Azul,Operação normal,Operação Paralisada,
+2025-12-27,04:44:10,Linha 2 – Verde,Operação normal,Operação Paralisada,
+2025-12-27,04:44:11,Linha 3 – Vermelha,Operação normal,Operação Paralisada,
+2025-12-27,04:44:11,Linha 4 – Amarela,Operação normal,Operação Paralisada,
+2025-12-27,04:44:12,Linha 5 – Lilás,Operação normal,Operação Paralisada,
+2025-12-27,04:44:15,Linha 15 – Prata,Operação normal,Operação Paralisada,
