@@ -1,1 +1,26 @@
-{}
+{
+  "Linha 1 – Azul": {
+    "status": "Operação normal",
+    "motivo": null
+  },
+  "Linha 2 – Verde": {
+    "status": "Operação normal",
+    "motivo": null
+  },
+  "Linha 3 – Vermelha": {
+    "status": "Operação normal",
+    "motivo": null
+  },
+  "Linha 4 – Amarela": {
+    "status": "Operação normal",
+    "motivo": null
+  },
+  "Linha 5 – Lilás": {
+    "status": "Operação normal",
+    "motivo": null
+  },
+  "Linha 15 – Prata": {
+    "status": "Operação normal",
+    "motivo": null
+  }
+}
