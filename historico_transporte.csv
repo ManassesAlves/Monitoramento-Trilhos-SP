@@ -279,3 +279,4 @@ Data,Hora,Linha,Status Novo,Status Antigo
 2026-01-08,04:47:02,Linha 4 – Amarela,Operação normal,Operação Paralisada,
 2026-01-08,04:47:02,Linha 5 – Lilás,Operação normal,Operação Paralisada,
 2026-01-08,04:47:06,Linha 15 – Prata,Operação normal,Operação Paralisada,
+2026-01-08,10:55:06,Linha 15 – Prata,Velocidade Reduzida,Operação normal,15 Prata Velocidade Reduzida
