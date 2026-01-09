@@ -287,3 +287,9 @@ Data,Hora,Linha,Status Novo,Status Antigo
 2026-01-09,00:07:34,Linha 4 – Amarela,Operação Paralisada,Operação normal,4 Amarela Operação Encerrada
 2026-01-09,00:07:35,Linha 5 – Lilás,Operação Paralisada,Operação normal,5 Lilás Operação Encerrada
 2026-01-09,00:07:38,Linha 15 – Prata,Operação Paralisada,Operação normal,15 Prata Operação Encerrada
+2026-01-09,04:48:33,Linha 1 – Azul,Operação normal,Operação Paralisada,
+2026-01-09,04:48:34,Linha 2 – Verde,Operação normal,Operação Paralisada,
+2026-01-09,04:48:35,Linha 3 – Vermelha,Operação normal,Operação Paralisada,
+2026-01-09,04:48:35,Linha 4 – Amarela,Operação normal,Operação Paralisada,
+2026-01-09,04:48:36,Linha 5 – Lilás,Operação normal,Operação Paralisada,
+2026-01-09,04:48:40,Linha 15 – Prata,Operação normal,Operação Paralisada,
