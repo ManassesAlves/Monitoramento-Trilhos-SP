@@ -1,7 +1,7 @@
 {
   "Linha 1 – Azul": {
-    "status": "Operação normal",
-    "motivo": null
+    "status": "Velocidade Reduzida",
+    "motivo": "1 Azul Velocidade Reduzida"
   },
   "Linha 2 – Verde": {
     "status": "Operação normal",
