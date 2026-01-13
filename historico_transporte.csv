@@ -337,3 +337,9 @@ Data,Hora,Linha,Status Novo,Status Antigo
 2026-01-12,08:37:00,Linha 2 – Verde,Operação normal,Velocidade Reduzida,
 2026-01-12,16:12:11,Linha 3 – Vermelha,Velocidade Reduzida,Operação normal,3 Vermelha Velocidade Reduzida
 2026-01-12,16:28:33,Linha 3 – Vermelha,Operação normal,Velocidade Reduzida,
+2026-01-13,00:45:31,Linha 1 – Azul,Operação Paralisada,Operação normal,1 Azul Operação Encerrada
+2026-01-13,00:45:32,Linha 2 – Verde,Operação Paralisada,Operação normal,2 Verde Operação Encerrada
+2026-01-13,00:45:32,Linha 3 – Vermelha,Operação Paralisada,Operação normal,3 Vermelha Operação Encerrada
+2026-01-13,00:45:33,Linha 4 – Amarela,Operação Paralisada,Operação normal,4 Amarela Operação Encerrada
+2026-01-13,00:45:33,Linha 5 – Lilás,Operação Paralisada,Operação normal,5 Lilás Operação Encerrada
+2026-01-13,00:45:37,Linha 15 – Prata,Operação Paralisada,Operação normal,15 Prata Operação Encerrada
