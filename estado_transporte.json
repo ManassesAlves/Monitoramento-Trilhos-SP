@@ -1,26 +1,26 @@
 {
   "Linha 1 – Azul": {
-    "status": "Operação Paralisada",
-    "motivo": "1 Azul Operação Encerrada"
+    "status": "Operação normal",
+    "motivo": null
   },
   "Linha 2 – Verde": {
-    "status": "Operação Paralisada",
-    "motivo": "2 Verde Operação Encerrada"
+    "status": "Operação normal",
+    "motivo": null
   },
   "Linha 3 – Vermelha": {
-    "status": "Operação Paralisada",
-    "motivo": "3 Vermelha Operação Encerrada"
+    "status": "Operação normal",
+    "motivo": null
   },
   "Linha 4 – Amarela": {
-    "status": "Operação Paralisada",
-    "motivo": "4 Amarela Operação Encerrada"
+    "status": "Operação normal",
+    "motivo": null
   },
   "Linha 5 – Lilás": {
-    "status": "Operação Paralisada",
-    "motivo": "5 Lilás Operação Encerrada"
+    "status": "Operação normal",
+    "motivo": null
   },
   "Linha 15 – Prata": {
-    "status": "Operação Paralisada",
-    "motivo": "15 Prata Operação Encerrada"
+    "status": "Operação normal",
+    "motivo": null
   }
 }
