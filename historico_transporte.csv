@@ -369,3 +369,5 @@ Data,Hora,Linha,Status Novo,Status Antigo
 2026-01-15,04:48:45,Linha 15 – Prata,Operação normal,Operação Paralisada,
 2026-01-15,18:00:41,Linha 1 – Azul,Velocidade Reduzida,Operação normal,1 Azul Velocidade Reduzida
 2026-01-15,18:00:41,Linha 3 – Vermelha,Velocidade Reduzida,Operação normal,3 Vermelha Velocidade Reduzida
+2026-01-15,18:30:49,Linha 1 – Azul,Operação normal,Velocidade Reduzida,
+2026-01-15,18:30:49,Linha 3 – Vermelha,Operação normal,Velocidade Reduzida,
